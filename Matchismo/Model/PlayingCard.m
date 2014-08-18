@@ -10,6 +10,29 @@
 
 @implementation PlayingCard
 
+- (int)match:(NSArray *)otherCards {
+    int score = 0;
+    
+    for (PlayingCard *otherCard in otherCards) {
+        if (otherCard.rank == self.rank) {
+            score += 4;
+        } else if ([otherCard.suit isEqualToString:self.suit]) {
+            score += 1;
+        }
+    }
+    
+    if ([otherCards count] > 1) {
+        Card *otherCard = [otherCards firstObject];
+        NSMutableArray *matchCards = [[NSMutableArray alloc] init];
+        for (int i = 1; i < [otherCards count]; i++) {
+            [matchCards addObject:[otherCards objectAtIndex:i]];
+        }
+        score += [otherCard match:matchCards];
+    }
+    
+    return score;
+}
+
 - (NSString *)contents {
     NSArray *rankStrings = [PlayingCard rankStrings];
     return [rankStrings[self.rank] stringByAppendingString:self.suit];
@@ -18,7 +41,7 @@
 @synthesize suit = _suit;
 
 + (NSArray *)validSuits {
-    return @[@"♠︎", @"♣︎", @"♥︎", @"♦︎"];
+    return @[@"♠️", @"♣️", @"❤️", @"♦️"];
 }
 
 - (void)setSuit:(NSString *)suit {
