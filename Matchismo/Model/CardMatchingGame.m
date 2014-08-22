@@ -12,6 +12,7 @@
 @property (nonatomic, readwrite) NSInteger score;
 @property (nonatomic, strong) NSMutableArray *cards; // of Card
 @property (nonatomic, strong) NSMutableArray *chosenCards; // of Card
+@property (nonatomic, strong, readwrite) NSDictionary *lastMove;
 @end
 
 @implementation CardMatchingGame
@@ -37,6 +38,11 @@
 - (NSMutableArray *)chosenCards {
     if (!_chosenCards) _chosenCards = [[NSMutableArray alloc] init];
     return _chosenCards;
+}
+
+- (NSDictionary *)lastMove {
+    if (!_lastMove) _lastMove = @{@"wasMatch":@NO,@"cards":self.chosenCards,@"matchScore":@0};
+    return _lastMove;
 }
 
 - (instancetype)initWithCardCount:(NSUInteger)count usingDeck:(Deck *)deck {
@@ -75,20 +81,25 @@ static const int MATCH_BONUS = 4;
             if (chosenIndex >= 0) {
                 [self.chosenCards removeObjectAtIndex:chosenIndex];
             }
+            // Change last move now that a card was deselected.
+            self.lastMove = @{@"wasMatch":@NO,@"cards":self.chosenCards,@"matchScore":@0};
         } else {
-            NSLog(@"Current card: %@", card);
-            NSLog(@"Chosen cards: %@", self.chosenCards);
             if ([self.chosenCards count] == self.numCardsToMatch - 1) {
                 int matchScore = [card match:self.chosenCards];
-                NSLog(@"Match score: %d", matchScore);
                 if (matchScore) {
                     self.score += matchScore * MATCH_BONUS;
                     card.matched = YES;
                     for (Card *otherCard in self.chosenCards) {
                         otherCard.matched = YES;
                     }
+                    [self.chosenCards addObject:card];
+                    // Change last move now that there was a match.
+                    self.lastMove = @{@"wasMatch":@YES,@"cards":[self.chosenCards copy],@"matchScore":@(matchScore * MATCH_BONUS)};
                 } else {
                     self.score -= MISMATCH_PENALTY;
+                    [self.chosenCards addObject:card];
+                    // Change last move now that there was not a match.
+                    self.lastMove = @{@"wasMatch":@NO,@"cards":[self.chosenCards copy],@"matchScore":@(-MISMATCH_PENALTY)};
                 }
                 // Remove all previously chosen cards.
                 [self.chosenCards removeAllObjects];
@@ -98,7 +109,10 @@ static const int MATCH_BONUS = 4;
                 }
             } else {
                 [self.chosenCards addObject:card];
+                // Change last move now that card was selected
+                self.lastMove = @{@"wasMatch":@NO,@"cards":[self.chosenCards copy],@"matchScore":@0};
             }
+            
             self.score -= COST_TO_CHOOSE;
             for (Card *otherCard in self.cards) {
                 if (otherCard.isChosen && !otherCard.isMatched) {
@@ -109,11 +123,6 @@ static const int MATCH_BONUS = 4;
             for (Card *otherCard in self.chosenCards) {
                 otherCard.chosen = YES;
             }
-        }
-    }
-    for (Card *otherCard in self.cards) {
-        if (otherCard.isChosen && !otherCard.isMatched) {
-            NSLog(@"Chosen but not matched: %@", otherCard);
         }
     }
 }

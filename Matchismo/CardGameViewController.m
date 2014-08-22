@@ -16,9 +16,16 @@
 @property (weak, nonatomic) IBOutlet UILabel *scoreLabel;
 @property (weak, nonatomic) IBOutlet UISegmentedControl *matchModeControl;
 @property (weak, nonatomic) IBOutlet UILabel *matchLogLabel;
+@property (strong, nonatomic) NSString *matchText;
 @end
 
 @implementation CardGameViewController
+
+
+- (NSString *)matchText {
+    if (!_matchText) _matchText = [[NSString alloc] init];
+    return _matchText;
+}
 
 - (CardMatchingGame *)game {
     if (!_game) _game = [self newGame];
@@ -61,6 +68,27 @@
         cardButton.enabled = !card.isMatched;
         self.scoreLabel.text = [NSString stringWithFormat:@"Score: %d", self.game.score];
     }
+    
+    self.matchText = [[NSString alloc] init];
+    NSLog(@"last move: %@", self.game.lastMove);
+    if ([self.game.lastMove[@"wasMatch"] boolValue] == YES) {
+        self.matchText = [self.matchText stringByAppendingString:@"Matched "];
+        for (Card *aCard in [self.game.lastMove objectForKey:@"cards"]) {
+            self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"%@ ", aCard.contents]];
+        }
+        self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"for %@ points.", self.game.lastMove[@"matchScore"]]];
+    }
+    else {
+        for (Card *aCard in [self.game.lastMove objectForKey:@"cards"]) {
+            self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"%@ ", aCard.contents]];
+        }
+        int compared = [self.game.lastMove[@"matchScore"] compare:@0];
+        NSLog(@"comparison of %@ and %@: %d", self.game.lastMove[@"matchScore"], @0, compared);
+        if (compared < 0) {
+            self.matchText = [self.matchText stringByAppendingString:@"don't match!"];
+        }
+    }
+    self.matchLogLabel.text = self.matchText;
 }
 
 - (NSString *)titleForCard:(Card *)card {

@@ -19,5 +19,6 @@
 
 @property (nonatomic, readonly) NSInteger score;
 @property (nonatomic) NSUInteger numCardsToMatch;
+@property (nonatomic, strong, readonly) NSDictionary *lastMove;
 
 @end
