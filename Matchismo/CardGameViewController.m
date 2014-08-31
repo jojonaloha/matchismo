@@ -7,7 +7,6 @@
 //
 
 #import "CardGameViewController.h"
-#import "PlayingCardDeck.h"
 #import "CardMatchingGame.h"
 
 @interface CardGameViewController ()
@@ -21,7 +20,6 @@
 
 @implementation CardGameViewController
 
-
 - (NSString *)matchText {
     if (!_matchText) _matchText = [[NSString alloc] init];
     return _matchText;
@@ -32,8 +30,8 @@
     return _game;
 }
 
-- (Deck *)createDeck {
-    return [[PlayingCardDeck alloc] init];
+- (Deck *)createDeck { // abstract
+    return nil;
 }
 
 - (CardMatchingGame *)newGame {
