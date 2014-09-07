@@ -8,17 +8,33 @@
 
 #import "CardGameViewController.h"
 #import "CardMatchingGame.h"
+#import "CardGameHistoryViewController.h"
 
 @interface CardGameViewController ()
-@property (strong, nonatomic) CardMatchingGame *game;
 @property (strong, nonatomic) IBOutletCollection(UIButton) NSArray *cardButtons;
 @property (weak, nonatomic) IBOutlet UILabel *scoreLabel;
-@property (weak, nonatomic) IBOutlet UISegmentedControl *matchModeControl;
-@property (weak, nonatomic) IBOutlet UILabel *matchLogLabel;
 @property (strong, nonatomic) NSString *matchText;
 @end
 
 @implementation CardGameViewController
+
+- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender
+{
+    if ([segue.identifier isEqualToString:@"Card Game History"]) {
+        if ([segue.destinationViewController isKindOfClass:[CardGameHistoryViewController class]]) {
+            CardGameHistoryViewController *cghvc = (CardGameHistoryViewController *)segue.destinationViewController;
+            cghvc.moves = self.game.moves;
+            cghvc.formatter = self;
+        }
+    }
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    [self newGame];
+    [self updateUI];
+}
 
 - (NSString *)matchText {
     if (!_matchText) _matchText = [[NSString alloc] init];
@@ -36,22 +52,15 @@
 
 - (CardMatchingGame *)newGame {
     CardMatchingGame *game = [[CardMatchingGame alloc] initWithCardCount:[self.cardButtons count] usingDeck:[self createDeck]];
-    game.numCardsToMatch = self.matchModeControl.selectedSegmentIndex + 2;
-    self.matchModeControl.enabled = YES;
     return game;
 }
 
-- (IBAction)changeMatchModeControl:(UISegmentedControl *)sender {
-    self.game.numCardsToMatch = sender.selectedSegmentIndex + 2;
-}
-
-- (IBAction)touchNewGameButton:(UIButton *)sender {
-    self.game = [self newGame];
+- (IBAction)touchNewGameButton:(UIBarButtonItem *)sender {
+    self.game = nil;
     [self updateUI];
 }
 
 - (IBAction)touchCardButton:(UIButton *)sender {
-    self.matchModeControl.enabled = NO;
     int chooseButtonIndex = [self.cardButtons indexOfObject:sender];
     [self.game chooseCardAtIndex:chooseButtonIndex];
     [self updateUI];
@@ -61,36 +70,15 @@
     for (UIButton *cardButton in self.cardButtons) {
         int cardButtonIndex = [self.cardButtons indexOfObject:cardButton];
         Card *card = [self.game cardAtIndex:cardButtonIndex];
-        [cardButton setTitle:[self titleForCard:card] forState:UIControlStateNormal];
+        [cardButton setAttributedTitle:[self titleForCard:card] forState:UIControlStateNormal];
         [cardButton setBackgroundImage:[self backgroundImageForCard:card] forState:UIControlStateNormal];
         cardButton.enabled = !card.isMatched;
         self.scoreLabel.text = [NSString stringWithFormat:@"Score: %d", self.game.score];
     }
-    
-    self.matchText = [[NSString alloc] init];
-    NSLog(@"last move: %@", self.game.lastMove);
-    if ([self.game.lastMove[@"wasMatch"] boolValue] == YES) {
-        self.matchText = [self.matchText stringByAppendingString:@"Matched "];
-        for (Card *aCard in [self.game.lastMove objectForKey:@"cards"]) {
-            self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"%@ ", aCard.contents]];
-        }
-        self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"for %@ points.", self.game.lastMove[@"matchScore"]]];
-    }
-    else {
-        for (Card *aCard in [self.game.lastMove objectForKey:@"cards"]) {
-            self.matchText = [self.matchText stringByAppendingString:[NSString stringWithFormat:@"%@ ", aCard.contents]];
-        }
-        int compared = [self.game.lastMove[@"matchScore"] compare:@0];
-        NSLog(@"comparison of %@ and %@: %d", self.game.lastMove[@"matchScore"], @0, compared);
-        if (compared < 0) {
-            self.matchText = [self.matchText stringByAppendingString:@"don't match!"];
-        }
-    }
-    self.matchLogLabel.text = self.matchText;
 }
 
-- (NSString *)titleForCard:(Card *)card {
-    return card.isChosen ? card.contents : @"";
+- (NSAttributedString *)titleForCard:(Card *)card {
+    return [[NSAttributedString alloc] initWithString: card.isChosen ? card.contents : @""];
 }
 
 - (UIImage *)backgroundImageForCard:(Card *)card {
